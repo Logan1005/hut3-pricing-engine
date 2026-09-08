@@ -1,0 +1,33 @@
+### Create a cart
+POST http://localhost:3000/carts
+Content-Type: application/json
+
+{}
+
+### Add 3 coffees to cart 1
+POST http://localhost:3000/carts/1/items
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 3
+}
+
+### Testing validation for adding items to cart
+### Add 0 coffees to cart 1
+POST http://localhost:3000/carts/1/items
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 0
+}
+
+### Get cart 1
+GET http://localhost:3000/carts/1
+
+### Get cart 2 (which is empty)
+GET http://localhost:3000/carts/2
+
+### Get cart 999 (which does not exist)
+GET http://localhost:3000/carts/999
