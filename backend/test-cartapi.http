@@ -31,3 +31,6 @@ GET http://localhost:3000/carts/2
 
 ### Get cart 999 (which does not exist)
 GET http://localhost:3000/carts/999
+
+### Calculate the total price of cart 1
+GET http://localhost:3000/carts/1/price

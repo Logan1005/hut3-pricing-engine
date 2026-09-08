@@ -2,6 +2,7 @@
 'It currently handles the POST request to create a new cart in the database.'
 const express = require("express");
 const db = require("../database/db");
+const pricingService = require("../services/pricingService");
 
 const router = express.Router();
 
@@ -117,6 +118,30 @@ router.get("/:cartId", (req, res) => {
         createdAt: cart.created_at,
         items
     });
+});
+
+'This endpoint calculates the subtotal for a given cart.'
+router.get("/:cartId/price", (req, res) => {
+    const { cartId } = req.params;
+
+    // Check that the cart exists
+    const cart = db
+        .prepare(`
+            SELECT id
+            FROM carts
+            WHERE id = ?
+        `)
+        .get(cartId);
+
+    if (!cart) {
+        return res.status(404).json({
+            error: "Cart not found"
+        });
+    }
+
+    const pricing = pricingService.calculateSubtotal(cartId);
+
+    res.json(pricing);
 });
 
 module.exports = router;
