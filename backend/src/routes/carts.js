@@ -3,6 +3,7 @@
 const express = require("express");
 const db = require("../database/db");
 const pricingService = require("../services/pricingService");
+const cartRepository = require("../repositories/cartRepository");
 
 const router = express.Router();
 
@@ -32,13 +33,7 @@ router.post("/:cartId/items", (req, res) => {
     }
 
     // Check that the cart exists
-    const cart = db
-        .prepare(`
-            SELECT id
-            FROM carts
-            WHERE id = ?
-        `)
-        .get(cartId);
+    const cart = cartRepository.getCartById(cartId);
 
     if (!cart) {
         return res.status(404).json({
@@ -69,6 +64,7 @@ router.post("/:cartId/items", (req, res) => {
         `)
         .run(cartId, productId, quantity);
 
+    'This returns the ID of the newly created cart item, along with the cart ID, product ID, and quantity.'
     res.status(201).json({
         id: result.lastInsertRowid,
         cartId: Number(cartId),
@@ -82,13 +78,7 @@ router.get("/:cartId", (req, res) => {
     const { cartId } = req.params;
 
     // Check that the cart exists
-    const cart = db
-        .prepare(`
-            SELECT id, created_at
-            FROM carts
-            WHERE id = ?
-        `)
-        .get(cartId);
+    const cart = cartRepository.getCartById(cartId);
 
     if (!cart) {
         return res.status(404).json({
@@ -125,13 +115,7 @@ router.get("/:cartId/price", (req, res) => {
     const { cartId } = req.params;
 
     // Check that the cart exists
-    const cart = db
-        .prepare(`
-            SELECT id
-            FROM carts
-            WHERE id = ?
-        `)
-        .get(cartId);
+    const cart = cartRepository.getCartById(cartId);
 
     if (!cart) {
         return res.status(404).json({
