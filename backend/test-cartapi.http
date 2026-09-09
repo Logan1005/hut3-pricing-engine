@@ -13,6 +13,24 @@ Content-Type: application/json
   "quantity": 3
 }
 
+### Add 4 coffees to cart 3
+POST http://localhost:3000/carts/3/items
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 4
+}
+
+### Add 8 coffees to cart 4
+POST http://localhost:3000/carts/4/items
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 8
+}
+
 ### Testing validation for adding items to cart
 ### Add 0 coffees to cart 1
 POST http://localhost:3000/carts/1/items
@@ -34,3 +52,9 @@ GET http://localhost:3000/carts/999
 
 ### Calculate the total price of cart 1
 GET http://localhost:3000/carts/1/price
+
+### Calculate the total price of cart 3
+GET http://localhost:3000/carts/3/price
+
+### Calculate the total price of cart 4
+GET http://localhost:3000/carts/4/price
