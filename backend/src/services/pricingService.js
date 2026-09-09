@@ -37,6 +37,37 @@ function calculateBuyXGetYDiscount(item) {
     };
 }
 
+function calculatePercentageDiscount(subtotalPence) {
+    'This finds if a percentage discount exists for the subtotal of the cart.'
+    const discount = db
+        .prepare(`
+            SELECT
+                name,
+                threshold_pence,
+                percentage
+            FROM percentage_discounts
+            WHERE threshold_pence <= ?
+            ORDER BY threshold_pence DESC
+            LIMIT 1
+        `)
+        .get(subtotalPence);
+
+    if (!discount) {
+        return null;
+    }
+
+    'This calculates the discount amount based on the percentage and the subtotal.'
+    const amountPence = Math.floor(
+        subtotalPence * discount.percentage / 100
+    );
+
+    'This returns an object containing the name of the discount and the calculated discount amount in pence.'
+    return {
+        name: discount.name,
+        amountPence
+    };
+}
+
 function calculateSubtotal(cartId) {
     'This retrieves the items in the cart.'
     const items = db
@@ -86,6 +117,13 @@ function calculateSubtotal(cartId) {
                 amountPence: discount.amountPence
             });
         }
+    }
+
+    const percentageDiscount = calculatePercentageDiscount(subtotalPence);
+
+    'If a percentage discount exists and the amount is greater than 0, it adds the discount to the discounts array.'
+    if (percentageDiscount && percentageDiscount.amountPence > 0) {
+        discounts.push(percentageDiscount);
     }
 
     'This calculates the total discount amount by summing up all the individual discounts.'
