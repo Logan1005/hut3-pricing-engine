@@ -118,118 +118,177 @@ async function updateQuantity(itemId, quantity) {
 
 
     return (
-    <div>
-        <h1>Hut 3 Pricing Engine</h1>
+    <div className="app">
 
-        <h2>Products</h2>
+        <header className="header">
+            <h1>Hut 3 Pricing Engine</h1>
+            <p>Simple cart pricing and discount engine</p>
+        </header>
 
-        {products.map((product) => (
-            <div key={product.id}>
-                <h3>{product.product_name}</h3>
+        <section className="section">
+            <h2>Products</h2>
 
-                <p>
-                    £{(product.price_pence / 100).toFixed(2)}
-                </p>
+            <div className="product-grid">
+                {products.map((product) => (
+                    <div className="product-card" key={product.id}>
+                        <h3>{product.product_name}</h3>
 
-                <button onClick={() => addToCart(product.id)}>
-                    Add to cart
-                </button>
-            </div>
-        ))}
-
-        <h2>Your Cart</h2>
-
-        {!cart || cart.items.length === 0 ? (
-            <p>Your cart is empty.</p>
-        ) : (
-            <div>
-                {cart.items.map((item) => (
-                    <div key={item.id}>
-                        <h3>{item.product_name}</h3>
-
-                        <p>
-                            £{(item.price_pence / 100).toFixed(2)}
+                        <p className="product-price">
+                            £{(product.price_pence / 100).toFixed(2)}
                         </p>
 
-                        <div>
-                            <button
-                                onClick={() =>
-                                    updateQuantity(item.id, item.quantity - 1)
-                                }
-                                disabled={item.quantity === 1}
-                            >
-                                -
-                            </button>
-
-                            <span>
-                                {" "}
-                                {item.quantity}{" "}
-                            </span>
-
-                            <button
-                                onClick={() =>
-                                    updateQuantity(item.id, item.quantity + 1)
-                                }
-                            >
-                                +
-                            </button>
-                        </div>
-
-                        <button onClick={() => removeFromCart(item.id)}>
-                            Remove from cart
+                        <button
+                            className="primary-button"
+                            onClick={() => addToCart(product.id)}
+                        >
+                            Add to cart
                         </button>
                     </div>
                 ))}
             </div>
-        )}
 
-        <h2>Price</h2>
+        </section>
 
-        <div>
-            <h3>Coupon</h3>
+        <section className="section">
+            <h2>Your Cart</h2>
 
-            <input
-                type="text"
-                value={couponCode}
-                onChange={(event) => setCouponCode(event.target.value)}
-                placeholder="Enter coupon code"
-            />
+            {!cart || cart.items.length === 0 ? (
+                <div className="empty-cart">
+                    <p>Your cart is empty.</p>
+                </div>
+            ) : (
+                <div className="cart">
+                    {cart.items.map((item) => (
+                        <div className="cart-item" key={item.id}>
+                            <div className="cart-item-details">
+                                <h3>{item.product_name}</h3>
 
-            <button onClick={applyCoupon}>
-                Apply Coupon
-            </button>
-        </div>
+                                <p>
+                                    £{(item.price_pence / 100).toFixed(2)} each
+                                </p>
+                            </div>
 
-        {pricing && (
-            <div>
-                {pricing.coupon && !pricing.coupon.valid && (
-                    <p>{pricing.coupon.message}</p>
-                )}
+                            <div className="cart-actions">
+                                <div className="quantity-controls">
+                                    <button
+                                        className="quantity-button"
+                                        onClick={() =>
+                                            updateQuantity(
+                                                item.id,
+                                                item.quantity - 1
+                                            )
+                                        }
+                                        disabled={item.quantity === 1}
+                                    >
+                                        -
+                                    </button>
 
-                <p>
-                    Subtotal: £{(pricing.subtotalPence / 100).toFixed(2)}
-                </p>
+                                    <span className="quantity">
+                                        {item.quantity}
+                                    </span>
 
-                {pricing.discounts.length === 0 ? (
-                    <p>No discounts applied.</p>
-                ) : (
-                    <div>
-                        <h3>Discounts</h3>
+                                    <button
+                                        className="quantity-button"
+                                        onClick={() =>
+                                            updateQuantity(
+                                                item.id,
+                                                item.quantity + 1
+                                            )
+                                        }
+                                    >
+                                        +
+                                    </button>
+                                </div>
 
-                        {pricing.discounts.map((discount, index) => (
-                            <p key={index}>
-                                {discount.name}: -£
-                                {(discount.amountPence / 100).toFixed(2)}
-                            </p>
-                        ))}
-                    </div>
-                )}
+                                <button
+                                    className="remove-button"
+                                    onClick={() => removeFromCart(item.id)}
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </section>
 
-                <h3>
-                    Total: £{(pricing.totalPence / 100).toFixed(2)}
-                </h3>
+
+        <section className="section">
+            <h2>Coupon</h2>
+
+            <div className="coupon">
+                <div className="coupon-form">
+                    <input
+                        className="coupon-input"
+                        type="text"
+                        value={couponCode}
+                        onChange={(event) => setCouponCode(event.target.value)}
+                        placeholder="Enter coupon code"
+                    />
+
+                    <button
+                        className="primary-button"
+                        onClick={applyCoupon}
+                    >
+                        Apply Coupon
+                    </button>
+                </div>
+
+                {pricing &&
+                    pricing.coupon &&
+                    !pricing.coupon.valid && (
+                        <p className="coupon-error">
+                            {pricing.coupon.message}
+                        </p>
+                    )}
             </div>
-        )}
+        </section>
+
+
+        <section className="section">
+            <h2>Price</h2>
+
+            {pricing && (
+                <div className="price-summary">
+                    <div className="price-row">
+                        <span>Subtotal</span>
+
+                        <span>
+                            £{(pricing.subtotalPence / 100).toFixed(2)}
+                        </span>
+                    </div>
+
+                    {pricing.discounts.length === 0 ? (
+                        <p>No discounts applied.</p>
+                    ) : (
+                        <div>
+                            {pricing.discounts.map((discount, index) => (
+                                <div
+                                    className="price-row discount"
+                                    key={index}
+                                >
+                                    <span>{discount.name}</span>
+
+                                    <span>
+                                        -£
+                                        {(discount.amountPence / 100).toFixed(2)}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="total-row">
+                        <span>Total</span>
+
+                        <span>
+                            £{(pricing.totalPence / 100).toFixed(2)}
+                        </span>
+                    </div>
+                </div>
+            )}
+        </section>
         
     </div>
 );
