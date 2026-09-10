@@ -111,10 +111,10 @@ router.get("/:cartId", (req, res) => {
 });
 
 'This endpoint calculates the subtotal for a given cart.'
-router.get("/:cartId/price", (req, res) => {
+router.post("/:cartId/price", (req, res) => {
     const { cartId } = req.params;
+    const { couponCode } = req.body;
 
-    // Check that the cart exists
     const cart = cartRepository.getCartById(cartId);
 
     if (!cart) {
@@ -123,7 +123,16 @@ router.get("/:cartId/price", (req, res) => {
         });
     }
 
-    const pricing = pricingService.calculateSubtotal(cartId);
+    if (couponCode !== undefined && typeof couponCode !== "string") {
+        return res.status(400).json({
+            error: "Coupon code must be a string"
+        });
+    }
+
+    const pricing = pricingService.calculateSubtotal(
+        cartId,
+        couponCode
+    );
 
     res.json(pricing);
 });

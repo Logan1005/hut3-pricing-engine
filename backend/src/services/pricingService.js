@@ -68,7 +68,42 @@ function calculatePercentageDiscount(subtotalPence) {
     };
 }
 
-function calculateSubtotal(cartId) {
+'This function calculates the discount amount for a given coupon code.'
+function calculateCouponDiscount(couponCode) {
+    if (!couponCode) {
+        return null;
+    }
+
+    const normalizedCode = couponCode.trim().toUpperCase();
+
+    const coupon = db
+        .prepare(`
+            SELECT
+                code,
+                discount_pence
+            FROM coupons
+            WHERE code = ?
+        `)
+        .get(normalizedCode);
+
+    if (!coupon) {
+        return {
+            code: normalizedCode,
+            valid: false,
+            message: "Incorrect coupon code"
+        };
+    }
+
+    return {
+        code: coupon.code,
+        valid: true,
+        name: `Coupon ${coupon.code}`,
+        amountPence: coupon.discount_pence
+    };
+}
+
+
+function calculateSubtotal(cartId, couponCode) {
     'This retrieves the items in the cart.'
     const items = db
         .prepare(`
@@ -126,6 +161,20 @@ function calculateSubtotal(cartId) {
         discounts.push(percentageDiscount);
     }
 
+    const couponDiscount = calculateCouponDiscount(couponCode);
+
+    'If a coupon discount exists and the amount is greater than 0, it adds the discount to the discounts array.'
+    if (
+        couponDiscount &&
+        couponDiscount.valid &&
+        couponDiscount.amountPence > 0
+    ) {
+        discounts.push({
+            name: couponDiscount.name,
+            amountPence: couponDiscount.amountPence
+        });
+    }
+
     'This calculates the total discount amount by summing up all the individual discounts.'
     const totalDiscountPence = discounts.reduce(
         (total, discount) => total + discount.amountPence,
@@ -143,6 +192,7 @@ function calculateSubtotal(cartId) {
         items: pricedItems,
         subtotalPence,
         discounts,
+        coupon: couponDiscount,
         totalPence
     };
 }
