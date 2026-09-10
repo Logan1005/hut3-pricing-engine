@@ -147,3 +147,14 @@ Content-Type: application/json
 {
   "couponCode": "WELCOME5"
 }
+
+
+### Testing frontend before frontend is fully implemented
+### Get cart 7 (should have 1 coffee and 1 tea)
+GET http://localhost:3000/carts/7
+
+###
+GET http://localhost:3000/carts/8
+
+###
+GET http://localhost:3000/carts/9

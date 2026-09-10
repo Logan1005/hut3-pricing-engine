@@ -2,7 +2,6 @@
 const express = require("express");
 
 const app = express();
-const db = require("./database/db");
 const productsRouter = require("./routes/products");
 const cartsRouter = require("./routes/carts");
 

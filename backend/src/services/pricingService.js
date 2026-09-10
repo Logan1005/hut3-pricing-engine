@@ -103,7 +103,7 @@ function calculateCouponDiscount(couponCode) {
 }
 
 
-function calculateSubtotal(cartId, couponCode) {
+function calculatePrice(cartId, couponCode) {
     'This retrieves the items in the cart.'
     const items = db
         .prepare(`
@@ -198,5 +198,5 @@ function calculateSubtotal(cartId, couponCode) {
 }
 
 module.exports = {
-    calculateSubtotal
+    calculatePrice
 };

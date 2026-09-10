@@ -1,122 +1,238 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
+    const [products, setProducts] = useState([]);
+    'Tell Frontend which cart to use'
+    const [cartId, setCartId] = useState(null);
+    'Tell Frontend what is in the cart'
+    const [cart, setCart] = useState(null);
+    'Tell Frontend what the pricing is for the cart'
+    const [pricing, setPricing] = useState(null);
+    'Tell Frontend what the coupon code is for the cart (will be provided by the user)'
+    const [couponCode, setCouponCode] = useState("");
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    'This useEffect gets the list of products from the backend API when the page loads and updates the products state.'
+    useEffect(() => {
+        fetch("/products")
+            .then((response) => response.json())
+            .then((data) => {
+                setProducts(data);
+            });
+    }, []);
 
-      <div className="ticks"></div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+    async function addToCart(productId) {
+    let currentCartId = cartId;
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    if (!currentCartId) {
+        const cartResponse = await fetch("/carts", {
+            method: "POST"
+        });
+
+        const cart = await cartResponse.json();
+
+        currentCartId = cart.id;
+        setCartId(currentCartId);
+    }
+
+    await fetch(`/carts/${currentCartId}/items`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            productId: productId,
+            quantity: 1
+        })
+    });
+
+    await loadCart(currentCartId);
+    await loadPrice(currentCartId);
 }
 
-export default App
+'Function to load the cart from the backend API and update the cart state.'
+async function loadCart(id) {
+    const response = await fetch(`/carts/${id}`);
+
+    const data = await response.json();
+
+    setCart(data);
+}
+
+'Function to load the pricing for the cart from the backend API and update the pricing state.'
+async function loadPrice(id, couponCode = "") {
+    const response = await fetch(`/carts/${id}/price`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            couponCode: couponCode
+        })
+    });
+
+    const data = await response.json();
+
+    setPricing(data);
+}
+
+'Function to apply a coupon code to the cart by calling the loadPrice function with the current cartId and couponCode.'
+async function applyCoupon() {
+    if (!cartId) {
+        return;
+    }
+
+    await loadPrice(cartId, couponCode);
+}
+
+'Function to remove an item from the cart by sending a DELETE request to the backend API and then reloading the cart.'
+async function removeFromCart(itemId) {
+    await fetch(`/carts/${cartId}/items/${itemId}`, {
+        method: "DELETE"
+    });
+
+    await loadCart(cartId);
+    await loadPrice(cartId);
+}
+
+'Function to update the quantity of an item in the cart by sending a PATCH request to the backend API and then reloading the cart.'
+async function updateQuantity(itemId, quantity) {
+    if (quantity <= 0) {
+        return;
+    }
+
+    await fetch(`/carts/${cartId}/items/${itemId}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            quantity: quantity
+        })
+    });
+
+    await loadCart(cartId);
+    await loadPrice(cartId);
+}
+
+
+    return (
+    <div>
+        <h1>Hut 3 Pricing Engine</h1>
+
+        <h2>Products</h2>
+
+        {products.map((product) => (
+            <div key={product.id}>
+                <h3>{product.product_name}</h3>
+
+                <p>
+                    £{(product.price_pence / 100).toFixed(2)}
+                </p>
+
+                <button onClick={() => addToCart(product.id)}>
+                    Add to cart
+                </button>
+            </div>
+        ))}
+
+        <h2>Your Cart</h2>
+
+        {!cart || cart.items.length === 0 ? (
+            <p>Your cart is empty.</p>
+        ) : (
+            <div>
+                {cart.items.map((item) => (
+                    <div key={item.id}>
+                        <h3>{item.product_name}</h3>
+
+                        <p>
+                            £{(item.price_pence / 100).toFixed(2)}
+                        </p>
+
+                        <div>
+                            <button
+                                onClick={() =>
+                                    updateQuantity(item.id, item.quantity - 1)
+                                }
+                                disabled={item.quantity === 1}
+                            >
+                                -
+                            </button>
+
+                            <span>
+                                {" "}
+                                {item.quantity}{" "}
+                            </span>
+
+                            <button
+                                onClick={() =>
+                                    updateQuantity(item.id, item.quantity + 1)
+                                }
+                            >
+                                +
+                            </button>
+                        </div>
+
+                        <button onClick={() => removeFromCart(item.id)}>
+                            Remove from cart
+                        </button>
+                    </div>
+                ))}
+            </div>
+        )}
+
+        <h2>Price</h2>
+
+        <div>
+            <h3>Coupon</h3>
+
+            <input
+                type="text"
+                value={couponCode}
+                onChange={(event) => setCouponCode(event.target.value)}
+                placeholder="Enter coupon code"
+            />
+
+            <button onClick={applyCoupon}>
+                Apply Coupon
+            </button>
+        </div>
+
+        {pricing && (
+            <div>
+                {pricing.coupon && !pricing.coupon.valid && (
+                    <p>{pricing.coupon.message}</p>
+                )}
+
+                <p>
+                    Subtotal: £{(pricing.subtotalPence / 100).toFixed(2)}
+                </p>
+
+                {pricing.discounts.length === 0 ? (
+                    <p>No discounts applied.</p>
+                ) : (
+                    <div>
+                        <h3>Discounts</h3>
+
+                        {pricing.discounts.map((discount, index) => (
+                            <p key={index}>
+                                {discount.name}: -£
+                                {(discount.amountPence / 100).toFixed(2)}
+                            </p>
+                        ))}
+                    </div>
+                )}
+
+                <h3>
+                    Total: £{(pricing.totalPence / 100).toFixed(2)}
+                </h3>
+            </div>
+        )}
+        
+    </div>
+);
+}
+
+export default App;

@@ -25,14 +25,12 @@ router.post("/:cartId/items", (req, res) => {
     const { cartId } = req.params;
     const { productId, quantity } = req.body;
 
-    // Check that quantity is a positive integer
     if (!Number.isInteger(quantity) || quantity <= 0) {
         return res.status(400).json({
             error: "Quantity must be a positive integer"
         });
     }
 
-    // Check that the cart exists
     const cart = cartRepository.getCartById(cartId);
 
     if (!cart) {
@@ -41,7 +39,6 @@ router.post("/:cartId/items", (req, res) => {
         });
     }
 
-    // Check that the product exists
     const product = db
         .prepare(`
             SELECT id
@@ -56,7 +53,32 @@ router.post("/:cartId/items", (req, res) => {
         });
     }
 
-    // Add the item to the cart
+    const existingItem = db
+        .prepare(`
+            SELECT id, quantity
+            FROM cart_items
+            WHERE cart_id = ?
+            AND product_id = ?
+        `)
+        .get(cartId, productId);
+
+    if (existingItem) {
+        const newQuantity = existingItem.quantity + quantity;
+
+        db.prepare(`
+            UPDATE cart_items
+            SET quantity = ?
+            WHERE id = ?
+        `).run(newQuantity, existingItem.id);
+
+        return res.status(200).json({
+            id: existingItem.id,
+            cartId: Number(cartId),
+            productId,
+            quantity: newQuantity
+        });
+    }
+
     const result = db
         .prepare(`
             INSERT INTO cart_items (cart_id, product_id, quantity)
@@ -64,13 +86,94 @@ router.post("/:cartId/items", (req, res) => {
         `)
         .run(cartId, productId, quantity);
 
-    'This returns the ID of the newly created cart item, along with the cart ID, product ID, and quantity.'
     res.status(201).json({
         id: result.lastInsertRowid,
         cartId: Number(cartId),
         productId,
         quantity
     });
+});
+
+'This endpoint updates the quantity of an item in a cart in the database, allowing for the addition or subtraction of items in the cart.'
+router.patch("/:cartId/items/:itemId", (req, res) => {
+    const { cartId, itemId } = req.params;
+    const { quantity } = req.body;
+
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+        return res.status(400).json({
+            error: "Quantity must be a positive integer"
+        });
+    }
+
+    const cart = cartRepository.getCartById(cartId);
+
+    if (!cart) {
+        return res.status(404).json({
+            error: "Cart not found"
+        });
+    }
+
+    const item = db
+        .prepare(`
+            SELECT id
+            FROM cart_items
+            WHERE id = ?
+            AND cart_id = ?
+        `)
+        .get(itemId, cartId);
+
+    if (!item) {
+        return res.status(404).json({
+            error: "Cart item not found"
+        });
+    }
+
+    db.prepare(`
+        UPDATE cart_items
+        SET quantity = ?
+        WHERE id = ?
+    `).run(quantity, itemId);
+
+    res.json({
+        id: Number(itemId),
+        cartId: Number(cartId),
+        quantity
+    });
+});
+
+'This endpoint removes an item from a cart in the database.'
+router.delete("/:cartId/items/:itemId", (req, res) => {
+    const { cartId, itemId } = req.params;
+
+    const cart = cartRepository.getCartById(cartId);
+
+    if (!cart) {
+        return res.status(404).json({
+            error: "Cart not found"
+        });
+    }
+
+    const item = db
+        .prepare(`
+            SELECT id
+            FROM cart_items
+            WHERE id = ?
+            AND cart_id = ?
+        `)
+        .get(itemId, cartId);
+
+    if (!item) {
+        return res.status(404).json({
+            error: "Cart item not found"
+        });
+    }
+
+    db.prepare(`
+        DELETE FROM cart_items
+        WHERE id = ?
+    `).run(itemId);
+
+    res.status(204).send();
 });
 
 'This endpoint retrieves a cart and its items from the database.'
@@ -110,7 +213,7 @@ router.get("/:cartId", (req, res) => {
     });
 });
 
-'This endpoint calculates the subtotal for a given cart.'
+'This endpoint calculates the price for a given cart.'
 router.post("/:cartId/price", (req, res) => {
     const { cartId } = req.params;
     const { couponCode } = req.body;
@@ -129,7 +232,7 @@ router.post("/:cartId/price", (req, res) => {
         });
     }
 
-    const pricing = pricingService.calculateSubtotal(
+    const pricing = pricingService.calculatePrice(
         cartId,
         couponCode
     );
